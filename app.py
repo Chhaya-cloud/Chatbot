@@ -30,7 +30,8 @@ def main():
             st.write("Please enter a message.")
 
 # Set up your OpenAI API key
-openai.api_key = st.secrets["openai_api_key"]
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
 
 # Run the main function
 if __name__ == "__main__":
