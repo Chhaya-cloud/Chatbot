@@ -1,38 +1,41 @@
 import streamlit as st
-import openai
+import pandas as pd
+import joblib
 
-# Function to query GPT API
-def chatbot(prompt):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt},
-        ]
-    )
-    return response['choices'][0]['message']['content']
+# Load the model
+model = joblib.load('rf_model.pkl')
 
-# Streamlit app starts here
-def main():
-    st.title("GPT Chatbot")
-    st.write("Enter your question below:")
+st.title("Car Price Prediction App 🚗")
 
-    # Input text box for user
-    user_input = st.text_input("You:", "")
+# Feature inputs (adjust based on your actual dataset)
+year = st.text_input("Enter Year of Purchase (e.g., 2015)")
+present_price = st.text_input("Enter Present Price of the car (in lakhs)")
+kms_driven = st.text_input("Enter Kilometers Driven")
+fuel_type = st.selectbox("Select Fuel Type", ['Petrol', 'Diesel', 'CNG'])
+seller_type = st.selectbox("Select Seller Type", ['Dealer', 'Individual'])
+transmission = st.selectbox("Select Transmission", ['Manual', 'Automatic'])
+owner = st.selectbox("Number of Previous Owners", [0, 1, 2, 3])
 
-    # Button to send input to chatbot
-    if st.button("Submit"):
-        if user_input:
-            # Call the chatbot function
-            response = chatbot(user_input)
-            st.write(f"Chatbot: {response}")
-        else:
-            st.write("Please enter a message.")
+# Convert categorical to numerical (same as your training)
+fuel_type_map = {'Petrol': 0, 'Diesel': 1, 'CNG': 2}
+seller_type_map = {'Dealer': 0, 'Individual': 1}
+transmission_map = {'Manual': 0, 'Automatic': 1}
 
-# Set up your OpenAI API key
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Prediction button
+if st.button("Predict Selling Price"):
+    try:
+        input_data = pd.DataFrame([[
+            int(year),
+            float(present_price),
+            int(kms_driven),
+            fuel_type_map[fuel_type],
+            seller_type_map[seller_type],
+            transmission_map[transmission],
+            int(owner)
+        ]], columns=['Year', 'Present_Price', 'Kms_Driven', 'Fuel_Type', 'Seller_Type', 'Transmission', 'Owner'])
 
+        prediction = model.predict(input_data)[0]
+        st.success(f"Predicted Selling Price: ₹ {round(prediction, 2)} lakhs")
 
-# Run the main function
-if __name__ == "__main__":
-    main()
+    except ValueError as e:
+        st.error(f"Input Error: {e}")
