@@ -1,36 +1,34 @@
 import streamlit as st
 import pandas as pd
-import joblib
+import pickle
 
-# Load the model
-model = joblib.load("rf_model.pkl")
+# Load the trained model and the expected feature names
+with open('rf_model.pkl', 'rb') as f:
+    model = pickle.load(f)
 
-# App title
+with open('features.pkl', 'rb') as f:
+    feature_names = pickle.load(f)
+
 st.title("Car Price Prediction App")
 
-# Collect inputs in correct order
-hp = st.number_input("Horse Power (HP)", min_value=0.0, format="%.2f")
-sp = st.number_input("Top Speed (SP)", min_value=0.0, format="%.2f")
-vol = st.number_input("Engine Volume (VOL)", min_value=0.0, format="%.2f")
-wt = st.number_input("Vehicle Weight (WT)", min_value=0.0, format="%.2f")
+# Create input fields dynamically based on saved feature names
+input_data = {}
+for feature in feature_names:
+    input_data[feature] = st.text_input(f"Enter value for {feature}")
 
-# When user clicks 'Predict'
-if st.button("Predict Price"):
+# Predict button
+if st.button("Predict"):
     try:
-        # Create dataframe with EXACT feature names and order
-        input_df = pd.DataFrame({
-            "HP": [hp],
-            "SP": [sp],
-            "VOL": [vol],
-            "WT": [wt]
-        })
+        # Create a DataFrame with the correct feature order
+        input_df = pd.DataFrame([input_data])[feature_names]
 
-        # Prediction
+        # Convert all input values to numeric
+        input_df = input_df.apply(pd.to_numeric)
+
+        # Make prediction
         prediction = model.predict(input_df)[0]
 
-        # Display result
-        st.success(f"Estimated Car Price: ₹{round(prediction, 2)} lakhs")
-
+        st.success(f"Predicted Value: {prediction}")
     except Exception as e:
         st.error(f"Error during prediction: {e}")
 
